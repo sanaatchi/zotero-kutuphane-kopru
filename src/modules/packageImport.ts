@@ -5,6 +5,7 @@ import {
   IDEMP_KEY,
   IMPORT_STATUS_KEY,
   escapeLikeExact,
+  isPathInsideRoot,
   parseExtraField,
   validateProcessedPackage,
   type PackageItem,
@@ -29,6 +30,37 @@ function upsertExtraLine(extra: string, key: string, value: string): string {
 }
 
 async function sha256Hex(path: string): Promise<string> {
+  const CHUNK = 1024 * 1024;
+  const stat = await IOUtils.stat(path);
+  const size = Number(stat.size) || 0;
+
+  // Prefer XPCOM incremental hash for large PDFs (streaming).
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const CcAny = (globalThis as any).Cc || (Components as any)?.classes;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const CiAny = (globalThis as any).Ci || (Components as any)?.interfaces;
+    if (CcAny && CiAny) {
+      const hasher = CcAny["@mozilla.org/security/hash;1"].createInstance(
+        CiAny.nsICryptoHash,
+      );
+      hasher.init(CiAny.nsICryptoHash.SHA256);
+      for (let offset = 0; offset < size; offset += CHUNK) {
+        const chunk = await IOUtils.read(path, {
+          offset,
+          maxBytes: Math.min(CHUNK, size - offset),
+        } as any);
+        hasher.update(chunk, chunk.byteLength);
+      }
+      const binary = hasher.finish(false);
+      return Array.from(binary as string, (c) =>
+        ("0" + c.charCodeAt(0).toString(16)).slice(-2),
+      ).join("");
+    }
+  } catch {
+    /* fall through */
+  }
+
   const bytes = await IOUtils.read(path);
   const digest = await crypto.subtle.digest("SHA-256", new Uint8Array(bytes));
   return Array.from(new Uint8Array(digest))
@@ -36,14 +68,30 @@ async function sha256Hex(path: string): Promise<string> {
     .join("");
 }
 
+async function resolveCanonicalPath(path: string): Promise<string> {
+  try {
+    // Normalize junctions/symlinks when the host supports it.
+    const resolved = await (IOUtils as any).getFile?.(path);
+    if (resolved?.path) return String(resolved.path);
+  } catch {
+    /* ignore */
+  }
+  return path;
+}
+
 async function probeFile(
   path: string,
+  allowedRoot?: string,
 ): Promise<{ size: number; sha256: string; isFile: boolean } | null> {
   try {
-    if (!(await IOUtils.exists(path))) return null;
-    const stat = await IOUtils.stat(path);
+    const canonical = await resolveCanonicalPath(path);
+    if (allowedRoot && !isPathInsideRoot(canonical, allowedRoot)) {
+      return null;
+    }
+    if (!(await IOUtils.exists(canonical))) return null;
+    const stat = await IOUtils.stat(canonical);
     if ((stat as any).type && (stat as any).type !== "regular") return null;
-    const sha256 = await sha256Hex(path);
+    const sha256 = await sha256Hex(canonical);
     return { size: Number(stat.size), sha256, isFile: true };
   } catch {
     return null;
@@ -67,7 +115,7 @@ async function attachmentMatchesPackage(
       path = "";
     }
     if (!path) continue;
-    const info = await probeFile(path);
+    const info = await probeFile(path, getRootPath() || undefined);
     if (!info) continue;
     if (info.sha256.toLowerCase() === row.sha256.toLowerCase()) {
       if (!row.size || info.size === row.size) return true;
@@ -229,7 +277,7 @@ async function importProcessedPdfPackage(): Promise<void> {
     if (raw && typeof raw === "object" && Array.isArray((raw as any).items)) {
       for (const row of (raw as any).items) {
         if (row && typeof row.path === "string") {
-          const info = await probeFile(row.path);
+          const info = await probeFile(row.path, root);
           if (info) itemsProbe[row.path] = info;
         }
       }

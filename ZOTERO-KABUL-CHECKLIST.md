@@ -1,16 +1,26 @@
-<!-- @ajan: cursor · @etiket: katman-1, kabul, zotero, v0.1.4 -->
+<!-- @ajan: cursor · @etiket: katman-1, kabul, zotero, v0.1.6 -->
+
 # Zotero kabul checklist — Kütüphane Köprü (Katman 1)
 
-Kod/release: **v0.1.4** ✅  
-Bu liste yalnız insan doğrulaması içindir.
+**Sürüm:** v0.1.6 · XPI: [releases/v0.1.6](https://github.com/sanaatchi/zotero-kutuphane-kopru-releases/releases/tag/v0.1.6)  
+Kod/CI: public · [CI 30496482499](https://github.com/sanaatchi/zotero-kutuphane-kopru/actions/runs/30496482499)
 
-| # | Adım | OK? |
-|---|------|-----|
-| 1 | XPI kur ([v0.1.4](https://github.com/sanaatchi/zotero-kutuphane-kopru-releases/releases/tag/v0.1.4)) | |
-| 2 | Tercihler → Kütüphane kök yolu doğru | |
-| 3 | Araçlar → Kütüphane Köprü → durum (registry satırı) | |
-| 4 | Seçili öğe → KP eşlemesi | |
-| 5 | Pipeline özeti menüsü | |
-| 6 | (İsteğe bağlı) `processed_pdf_package.json` aktarımı | |
+| Alan        | Değer          |
+| ----------- | -------------- |
+| Tarih       |                |
+| Testçi      |                |
+| Zotero      | 7 / 8 / 9 / 10 |
+| Sonuç özeti |                |
 
-Arşiv API: `GET /api/bridge/status` arsiv_app ayaktayken.
+| #   | Senaryo                   | Beklenen            | Sonuç | Kanıt |
+| --- | ------------------------- | ------------------- | ----- | ----- |
+| 1   | XPI kur / enable          | Hata yok            |       |       |
+| 2   | Tercihler → Kütüphane kök | Doğru yol           |       |       |
+| 3   | Durum menüsü              | Registry satırı     |       |       |
+| 4   | KP eşlemesi               | Seçili öğe KP       |       |       |
+| 5   | Pipeline özeti            | Özet görünür        |       |       |
+| 6   | B3 paket aktarımı         | SHA eşleşen PDF     |       |       |
+| 7   | 2. pencere                | Menü çift pencerede |       |       |
+| 8   | Güncelleme denetimi       | v0.1.6              |       |       |
+
+- [ ] Manuel matris tamam → rapor checklist satırı `✅`
