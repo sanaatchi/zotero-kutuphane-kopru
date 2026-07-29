@@ -1,6 +1,6 @@
 {
   "name": "zotero-kutuphane-kopru",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Kütüphane ↔ Zotero köprü — KP eşleme ve pipeline durumu (Katman 1).",
   "config": {
     "addonName": "Kütüphane Köprü",
