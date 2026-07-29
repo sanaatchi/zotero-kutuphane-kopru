@@ -1,6 +1,7 @@
 // @ajan: cursor · @etiket: katman-1, kopru, b3, package-import, handoff, hash-verify
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
+import { normalizeKutuphaneRoot } from "../utils/kutuphaneRoot";
 import {
   IDEMP_KEY,
   IMPORT_STATUS_KEY,
@@ -18,8 +19,7 @@ function alertDialog(message: string) {
 }
 
 function getRootPath(): string {
-  const v = getPref("kutuphaneRoot");
-  return typeof v === "string" ? v.trim() : "";
+  return normalizeKutuphaneRoot(getPref("kutuphaneRoot"));
 }
 
 function upsertExtraLine(extra: string, key: string, value: string): string {

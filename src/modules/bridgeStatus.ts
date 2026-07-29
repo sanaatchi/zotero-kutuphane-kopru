@@ -1,6 +1,7 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b0, b1, b2, bridge
+// @ajan: cursor · @etiket: katman-1, kopru, b0, b1, b2, bridge, path-normalize
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
+import { normalizeKutuphaneRoot } from "../utils/kutuphaneRoot";
 import {
   parseKpRegistryJson,
   summarizeSelectedAgainstRegistry,
@@ -20,8 +21,7 @@ function alertDialog(message: string) {
 }
 
 function getRootPath(): string {
-  const v = getPref("kutuphaneRoot");
-  return typeof v === "string" ? v.trim() : "";
+  return normalizeKutuphaneRoot(getPref("kutuphaneRoot"));
 }
 
 function citationKeyFromItem(item: Zotero.Item): string | null {
