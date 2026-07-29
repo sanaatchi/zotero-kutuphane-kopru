@@ -1,0 +1,22 @@
+<!-- @ajan: cursor · @etiket: katman-1, kopru, preferences -->
+<vbox id="__addonRef__-container" xmlns:html="http://www.w3.org/1999/xhtml">
+  <groupbox>
+    <label><html:h2 data-l10n-id="prefs-title"></html:h2></label>
+    <hbox align="center">
+      <label data-l10n-id="prefs-kutuphane-root"></label>
+      <html:input
+        preference="__prefsPrefix__.kutuphaneRoot"
+        type="text"
+        style="flex:1; min-width: 280px;"
+        placeholder="C:\Users\...\Kutuphane"
+      />
+    </hbox>
+    <html:label
+      data-l10n-id="prefs-kutuphane-root-hint"
+      style="opacity:0.7; font-size:11px;"
+    ></html:label>
+  </groupbox>
+</vbox>
+<linkset>
+  <html:link rel="localization" href="__addonRef__-preferences.ftl" />
+</linkset>

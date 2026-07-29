@@ -1,0 +1,6 @@
+build
+node_modules
+.scaffold/
+tsconfig.tsbuildinfo
+.DS_Store
+.env

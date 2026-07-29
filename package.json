@@ -1,0 +1,38 @@
+{
+  "name": "zotero-kutuphane-kopru",
+  "version": "0.1.1",
+  "description": "Kütüphane ↔ Zotero köprü — KP eşleme ve pipeline durumu (Katman 1).",
+  "config": {
+    "addonName": "Kütüphane Köprü",
+    "addonID": "kutuphane-kopru@ibrahimyildiz.art",
+    "addonRef": "kutuphanekopru",
+    "addonInstance": "KutuphaneKopru",
+    "prefsPrefix": "extensions.kutuphaneKopru",
+    "releasePage": "https://github.com/sanaatchi/zotero-kutuphane-kopru-releases/releases",
+    "updateJSON": "https://github.com/sanaatchi/zotero-kutuphane-kopru-releases/releases/download/update/update.json"
+  },
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "zotero-plugin serve",
+    "build": "tsc --noEmit && zotero-plugin build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanaatchi/zotero-kutuphane-kopru.git"
+  },
+  "author": "ibrahimyildiz.art",
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://github.com/sanaatchi/zotero-kutuphane-kopru-releases",
+  "dependencies": {
+    "zotero-plugin-toolkit": "5.1.0-beta.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.19",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "zotero-plugin-scaffold": "0.8.0",
+    "zotero-types": "^4.1.0-beta.3"
+  }
+}
