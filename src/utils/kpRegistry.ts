@@ -1,5 +1,8 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b1, kp-parse
+// @ajan: cursor · @etiket: katman-1, kopru, b1, kp-parse, max-pdf, citation-key
 // Pure KP helpers — no Zotero globals.
+
+/** Align with kitap_arsiv.context.MAX_LIBRARY_PDFS */
+export const MAX_LIBRARY_PDFS = 99_999;
 
 export type KpRegistrySummary = {
   occupiedCount: number;
@@ -11,6 +14,8 @@ export type KpMatchRow = {
   itemId: number;
   title: string;
   kp: string | null;
+  /** Where KP was resolved from (never treat arbitrary citation keys as KP). */
+  kpSource: "citation-key" | "title-or-extra" | null;
   inRegistry: boolean;
 };
 
@@ -19,6 +24,7 @@ export {
   extractKpFromText,
   parseKpRegistryJson,
   summarizeSelectedAgainstRegistry,
+  resolveItemKp,
 };
 
 const KP_RE = /\bKP0*\d{1,6}\b/i;
@@ -28,7 +34,7 @@ function normalizeKp(raw: string | null | undefined): string | null {
   const m = String(raw).trim().toUpperCase().match(/\bKP0*(\d{1,6})\b/);
   if (!m) return null;
   const num = Number(m[1]);
-  if (!Number.isFinite(num) || num < 1) return null;
+  if (!Number.isFinite(num) || num < 1 || num > MAX_LIBRARY_PDFS) return null;
   return `KP${String(num).padStart(6, "0")}`;
 }
 
@@ -36,6 +42,23 @@ function extractKpFromText(text: string | null | undefined): string | null {
   if (!text) return null;
   const m = String(text).match(KP_RE);
   return m ? normalizeKp(m[0]) : null;
+}
+
+/**
+ * Citation Key is only a KP when it itself matches KP######.
+ * Otherwise fall back to KP tokens in title/extra — never invent KP from
+ * arbitrary Better BibTeX keys.
+ */
+function resolveItemKp(opts: {
+  citationKey: string | null | undefined;
+  title?: string | null;
+  extra?: string | null;
+}): { kp: string | null; source: KpMatchRow["kpSource"] } {
+  const fromKey = normalizeKp(opts.citationKey);
+  if (fromKey) return { kp: fromKey, source: "citation-key" };
+  const fromTitle = extractKpFromText(opts.title) || extractKpFromText(opts.extra);
+  if (fromTitle) return { kp: fromTitle, source: "title-or-extra" };
+  return { kp: null, source: null };
 }
 
 function parseKpRegistryJson(raw: unknown): KpRegistrySummary {
@@ -60,7 +83,12 @@ function parseKpRegistryJson(raw: unknown): KpRegistrySummary {
 }
 
 function summarizeSelectedAgainstRegistry(
-  rows: Array<{ itemId: number; title: string; citationKey: string | null }>,
+  rows: Array<{
+    itemId: number;
+    title: string;
+    citationKey: string | null;
+    extra?: string | null;
+  }>,
   registry: KpRegistrySummary,
 ): {
   selected: number;
@@ -74,7 +102,12 @@ function summarizeSelectedAgainstRegistry(
   let withKp = 0;
   let inRegistry = 0;
   for (const row of rows) {
-    const kp = normalizeKp(row.citationKey) || extractKpFromText(row.citationKey);
+    const resolved = resolveItemKp({
+      citationKey: row.citationKey,
+      title: row.title,
+      extra: row.extra,
+    });
+    const kp = resolved.kp;
     const hit = !!(kp && registry.occupiedKeys.has(kp));
     if (kp) withKp += 1;
     if (hit) inRegistry += 1;
@@ -83,6 +116,7 @@ function summarizeSelectedAgainstRegistry(
       itemId: row.itemId,
       title: row.title,
       kp,
+      kpSource: resolved.source,
       inRegistry: hit,
     });
   }

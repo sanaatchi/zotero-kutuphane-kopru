@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b0, b2, menu
+// @ajan: cursor · @etiket: katman-1, kopru, b0, b2, b3, menu
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
@@ -6,6 +6,7 @@ import {
   showKutuphaneStatus,
   showPipelineSummary,
 } from "./bridgeStatus";
+import { importProcessedPdfPackage } from "./packageImport";
 
 export { initItemMenu };
 
@@ -53,6 +54,13 @@ function initItemMenu(_win: Window) {
         label: getString("menu-match-kp"),
         commandListener: () => {
           void matchSelectedKps();
+        },
+      },
+      {
+        tag: "menuitem",
+        label: getString("menu-import-package"),
+        commandListener: () => {
+          void importProcessedPdfPackage();
         },
       },
     ],

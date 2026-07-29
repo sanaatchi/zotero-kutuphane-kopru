@@ -2,7 +2,6 @@
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
 import {
-  extractKpFromText,
   parseKpRegistryJson,
   summarizeSelectedAgainstRegistry,
 } from "../utils/kpRegistry";
@@ -28,8 +27,8 @@ function getRootPath(): string {
 function citationKeyFromItem(item: Zotero.Item): string | null {
   const extra = (item.getField("extra") as string) || "";
   const m = extra.match(CITATION_KEY_LINE);
-  if (m) return m[1].trim();
-  return extractKpFromText(item.getField("title") as string);
+  // Only the Extra "Citation Key:" line — never invent KP from title here.
+  return m ? m[1].trim() : null;
 }
 
 async function loadRegistry(root: string) {
@@ -145,11 +144,17 @@ async function matchSelectedKps(): Promise<void> {
   }
   try {
     const reg = await loadRegistry(root);
-    const rows = items.map((item: Zotero.Item) => ({
-      itemId: item.id,
-      title: item.getDisplayTitle?.() || (item.getField("title") as string) || "—",
-      citationKey: citationKeyFromItem(item),
-    }));
+    const rows = items.map((item: Zotero.Item) => {
+      const title =
+        item.getDisplayTitle?.() || (item.getField("title") as string) || "—";
+      const extra = (item.getField("extra") as string) || "";
+      return {
+        itemId: item.id,
+        title,
+        citationKey: citationKeyFromItem(item),
+        extra,
+      };
+    });
     const summary = summarizeSelectedAgainstRegistry(rows, reg);
     const lines = [
       getString("match-title"),

@@ -4,6 +4,7 @@ import {
   extractKpFromText,
   normalizeKp,
   parseKpRegistryJson,
+  resolveItemKp,
   summarizeSelectedAgainstRegistry,
 } from "../src/utils/kpRegistry";
 
@@ -12,6 +13,11 @@ describe("kpRegistry helpers", () => {
     expect(normalizeKp("KP1353")).toBe("KP001353");
     expect(normalizeKp("kp001353")).toBe("KP001353");
     expect(normalizeKp("nope")).toBeNull();
+  });
+
+  it("rejects KP above MAX_LIBRARY_PDFS", () => {
+    expect(normalizeKp("KP100000")).toBeNull();
+    expect(normalizeKp("KP099999")).toBe("KP099999");
   });
 
   it("extracts KP from free text", () => {
@@ -46,5 +52,14 @@ describe("kpRegistry helpers", () => {
     expect(summary.withKp).toBe(2);
     expect(summary.inRegistry).toBe(1);
     expect(summary.missing).toEqual(["KP009999"]);
+  });
+
+  it("does not treat arbitrary citation keys as KP", () => {
+    const r = resolveItemKp({
+      citationKey: "bergerson2020",
+      title: "Book KP001353",
+    });
+    expect(r.kp).toBe("KP001353");
+    expect(r.source).toBe("title-or-extra");
   });
 });

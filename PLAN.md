@@ -1,7 +1,10 @@
-<!-- @ajan: cursor · @etiket: katman-1, kopru, plan, kutuphane, b0, b1 -->
+<!-- @ajan: cursor · @etiket: katman-1, kopru, plan, kapanis, v0.1.4 -->
 # Katman 1 — Kütüphane ↔ Zotero köprü eklentisi
 
-**Durum:** B0–B2 ✅ (v0.1.1) — scaffold, kök pref, KP eşleme, pipeline özeti.
+> **Oturum başı:** [`CURSOR-KATMAN-1-EKSIKLER-RAPORU.md`](CURSOR-KATMAN-1-EKSIKLER-RAPORU.md) oku → düzelt → sonra faz/görev.  
+> Rule: `katman-eksik-raporu.mdc`
+
+**Durum:** ✅ **Tamam** — B0–B3 + P1/P2 + v0.1.4 public release (2026-07-30)
 
 **Strateji SSOT:** [`../../docs/uc-katman-stratejisi.md`](../../docs/uc-katman-stratejisi.md)
 
@@ -13,7 +16,7 @@ Kütüphane ağır iş hattının Zotero ile konuşan **ince yüzü**. OCR/renam
 
 ## addonID
 
-`kutuphane-kopru@ibrahimyildiz.art` · ref `kutuphanekopru`
+`kutuphane-kopru@ibrahimyildiz.art` · ref `kutuphanekopru` · **v0.1.4**
 
 ## Fazlar
 
@@ -22,7 +25,7 @@ Kütüphane ağır iş hattının Zotero ile konuşan **ince yüzü**. OCR/renam
 | **B0** | Scaffold + `kutuphaneRoot` pref + durum menüsü | ✅ |
 | **B1** | Seçili öğe Citation Key ↔ `kp_registry.json` | ✅ |
 | **B2** | Pipeline checkpoint / son batch özeti | ✅ |
-| **B3** | İşlenmiş KP’leri Zotero’ya aktar | sonra |
+| **B3** | İşlenmiş KP’leri Zotero’ya aktar | ✅ v0.1.4 |
 
 ## Çalıştırma
 
@@ -33,8 +36,12 @@ npm test
 npm run build
 ```
 
+**Yayın:** [`RELEASE.md`](RELEASE.md) · [v0.1.4](https://github.com/sanaatchi/zotero-kutuphane-kopru-releases/releases/tag/v0.1.4)  
+**CI:** `.github/workflows/kutuphane-kopru.yml`  
+**Kabul:** [`ZOTERO-KABUL-CHECKLIST.md`](ZOTERO-KABUL-CHECKLIST.md)
+
 Zotero: Tercihler → Kütüphane kök = `C:\Users\…\Kutuphane`  
-Araçlar → Kütüphane Köprü → durum / seçili KP eşlemesi
+Araçlar → Kütüphane Köprü → durum / KP eşlemesi / pipeline / işlenmiş KP aktar
 
 ## Yapmaz
 
