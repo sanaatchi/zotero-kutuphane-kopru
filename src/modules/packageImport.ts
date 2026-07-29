@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b3, package-import, handoff, hash-verify
+// @ajan: cursor · @etiket: katman-1, kopru, b3, package-import, handoff, hash-verify, windows-backslash
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
 import { normalizeKutuphaneRoot } from "../utils/kutuphaneRoot";

@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b0, b1, b2, bridge, path-normalize
+// @ajan: cursor · @etiket: katman-1, kopru, b0, b1, b2, bridge, path-normalize, windows-backslash
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
 import { normalizeKutuphaneRoot } from "../utils/kutuphaneRoot";
