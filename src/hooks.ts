@@ -1,11 +1,16 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b0, hooks, multi-window
+// @ajan: cursor · @etiket: katman-1, kopru, b0, hooks, multi-window, item-pane
 import { config, homepage } from "../package.json";
 import { getString, initLocale } from "./utils/locale";
 import { initItemMenu } from "./modules/menu";
+import {
+  registerKpItemPaneSection,
+  unregisterKpItemPaneSection,
+} from "./modules/itemPaneKp";
 
 /** Window-identity lifecycle — unregisterAll only when last tracked window closes. */
 const loadedWindows = new Set<Window>();
 let processMenusRegistered = false;
+let itemPaneRegistered = false;
 
 async function onStartup() {
   await Promise.all([
@@ -21,6 +26,10 @@ async function onStartup() {
     helpURL: homepage,
     image: `chrome://${config.addonRef}/content/icons/favicon.png`,
   });
+  if (!itemPaneRegistered) {
+    registerKpItemPaneSection();
+    itemPaneRegistered = true;
+  }
   await onMainWindowLoad(window);
 }
 
@@ -42,6 +51,8 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onShutdown(): void {
+  unregisterKpItemPaneSection();
+  itemPaneRegistered = false;
   ztoolkit.unregisterAll();
   processMenusRegistered = false;
   loadedWindows.clear();
