@@ -1,5 +1,6 @@
 // @ajan: cursor · @etiket: katman-1, kopru, b1, kp-parse, max-pdf, citation-key
 // Pure KP helpers — no Zotero globals.
+// Canonical KP###### policy mirrored in K2/K3 `src/utils/kpToken.ts` (same regex + MAX).
 
 /** Align with kitap_arsiv.context.MAX_LIBRARY_PDFS */
 export const MAX_LIBRARY_PDFS = 99_999;
