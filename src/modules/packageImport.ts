@@ -1,7 +1,15 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b3, package-import, handoff, hash-verify, windows-backslash
+// @ajan: cursor · @etiket: katman-1, kopru, b3, a3-dry-run, a4-category, package-import, handoff, hash-verify
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
 import { normalizeKutuphaneRoot } from "../utils/kutuphaneRoot";
+import { CATEGORY_KEY, SHA256_KEY } from "../utils/itemPaneFields";
+import {
+  countImportPlans,
+  formatImportPlanLines,
+  formatImportResultLines,
+  planImportAction,
+  type ImportRowPlan,
+} from "../utils/packageImportReport";
 import {
   IDEMP_KEY,
   IMPORT_STATUS_KEY,
@@ -10,9 +18,10 @@ import {
   parseExtraField,
   validateProcessedPackage,
   type PackageItem,
+  type ValidatedPackage,
 } from "../utils/processedPackage";
 
-export { importProcessedPdfPackage };
+export { importProcessedPdfPackage, previewProcessedPdfPackage };
 
 function alertDialog(message: string) {
   ztoolkit.getGlobal("alert")(message);
@@ -34,7 +43,6 @@ async function sha256Hex(path: string): Promise<string> {
   const stat = await IOUtils.stat(path);
   const size = Number(stat.size) || 0;
 
-  // Prefer XPCOM incremental hash for large PDFs (streaming).
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const CcAny = (globalThis as any).Cc || (Components as any)?.classes;
@@ -70,7 +78,6 @@ async function sha256Hex(path: string): Promise<string> {
 
 async function resolveCanonicalPath(path: string): Promise<string> {
   try {
-    // Normalize junctions/symlinks when the host supports it.
     const resolved = await (IOUtils as any).getFile?.(path);
     if (resolved?.path) return String(resolved.path);
   } catch {
@@ -98,7 +105,6 @@ async function probeFile(
   }
 }
 
-/** Mevcut ek paket SHA-256 / size ile uyuşuyor mu? */
 async function attachmentMatchesPackage(
   item: Zotero.Item,
   row: PackageItem,
@@ -193,7 +199,6 @@ async function createOrUpdateItem(
     const status = parseExtraField(extra, IMPORT_STATUS_KEY);
     const matches = await attachmentMatchesPackage(existing, row);
     if (status === "complete" && matches) return "skipped";
-    // Incomplete / failed / wrong-or-missing attachment → repair.
     try {
       if (!matches) {
         await eraseAttachments(existing);
@@ -204,7 +209,10 @@ async function createOrUpdateItem(
       }
       let repairedExtra = extra;
       repairedExtra = upsertExtraLine(repairedExtra, IMPORT_STATUS_KEY, "complete");
-      repairedExtra = upsertExtraLine(repairedExtra, "Kutuphane-SHA256", row.sha256);
+      repairedExtra = upsertExtraLine(repairedExtra, SHA256_KEY, row.sha256);
+      if (row.category) {
+        repairedExtra = upsertExtraLine(repairedExtra, CATEGORY_KEY, row.category);
+      }
       existing.setField("extra", repairedExtra);
       await existing.saveTx();
       return "repaired";
@@ -235,8 +243,10 @@ async function createOrUpdateItem(
   let extra = (item.getField("extra") as string) || "";
   extra = upsertExtraLine(extra, "Citation Key", row.kp);
   extra = upsertExtraLine(extra, IDEMP_KEY, row.idempotencyKey);
-  extra = upsertExtraLine(extra, "Kutuphane-SHA256", row.sha256);
-  // Pending until attachment succeeds — retry can repair.
+  extra = upsertExtraLine(extra, SHA256_KEY, row.sha256);
+  if (row.category) {
+    extra = upsertExtraLine(extra, CATEGORY_KEY, row.category);
+  }
   extra = upsertExtraLine(extra, IMPORT_STATUS_KEY, "pending");
   item.setField("extra", extra);
   await item.saveTx();
@@ -257,18 +267,17 @@ async function createOrUpdateItem(
   }
 }
 
-async function importProcessedPdfPackage(): Promise<void> {
-  const root = getRootPath();
-  if (!root) {
-    alertDialog(getString("status-no-root"));
-    return;
-  }
+async function loadValidatedPackage(
+  root: string,
+): Promise<
+  | { ok: true; pkg: ValidatedPackage; path: string }
+  | { ok: false; kind: "missing" | "invalid" | "error"; message: string }
+> {
   const path = PathUtils.join(root, "zotero_handoff", "processed_pdf_package.json");
+  if (!(await IOUtils.exists(path))) {
+    return { ok: false, kind: "missing", message: path };
+  }
   try {
-    if (!(await IOUtils.exists(path))) {
-      alertDialog(getString("package-missing", { args: { path } }));
-      return;
-    }
     const raw = await IOUtils.readJSON(path);
     const itemsProbe: Record<
       string,
@@ -287,47 +296,169 @@ async function importProcessedPdfPackage(): Promise<void> {
       fileInfo: itemsProbe,
     });
     if (!validated.ok) {
+      return {
+        ok: false,
+        kind: "invalid",
+        message: validated.errors
+          .slice(0, 8)
+          .map((e) => e.message)
+          .join("\n"),
+      };
+    }
+    return { ok: true, pkg: validated.package, path };
+  } catch (e: any) {
+    return {
+      ok: false,
+      kind: "error",
+      message: e?.message || String(e),
+    };
+  }
+}
+
+async function planRow(
+  libraryID: number,
+  row: PackageItem,
+): Promise<ImportRowPlan> {
+  try {
+    const existing = await findItemByIdempotency(libraryID, row.idempotencyKey);
+    if (!existing) {
+      return { kp: row.kp, action: "create" };
+    }
+    const extra = (existing.getField("extra") as string) || "";
+    const status = parseExtraField(extra, IMPORT_STATUS_KEY);
+    const matches = await attachmentMatchesPackage(existing, row);
+    const action = planImportAction({
+      hasExisting: true,
+      importStatus: status,
+      attachmentMatches: matches,
+    });
+    let detail: string | undefined;
+    if (action === "repair") {
+      if (!matches) detail = "attachment mismatch or missing";
+      else if (status !== "complete") detail = `status=${status || "unset"}`;
+    }
+    return { kp: row.kp, action, detail };
+  } catch (e: any) {
+    return {
+      kp: row.kp,
+      action: "fail",
+      detail: e?.message || String(e),
+    };
+  }
+}
+
+async function previewProcessedPdfPackage(): Promise<void> {
+  const root = getRootPath();
+  if (!root) {
+    alertDialog(getString("status-no-root"));
+    return;
+  }
+  if (!(await IOUtils.exists(root))) {
+    alertDialog(getString("status-root-missing", { args: { path: root } }));
+    return;
+  }
+  const loaded = await loadValidatedPackage(root);
+  if (!loaded.ok) {
+    if (loaded.kind === "missing") {
+      alertDialog(getString("package-missing", { args: { path: loaded.message } }));
+    } else if (loaded.kind === "invalid") {
+      alertDialog(getString("package-invalid") + "\n" + loaded.message);
+    } else {
       alertDialog(
-        getString("package-invalid") +
-          "\n" +
-          validated.errors
-            .slice(0, 5)
-            .map((e) => e.message)
-            .join("\n"),
+        getString("status-error", { args: { message: loaded.message } }),
       );
-      return;
     }
-    const libraryID = (Zotero.Libraries as any).userLibraryID as number;
-    let created = 0;
-    let skipped = 0;
-    let failed = 0;
-    let repaired = 0;
-    for (const row of validated.package.items) {
-      try {
-        const result = await createOrUpdateItem(libraryID, row);
-        if (result === "skipped") skipped += 1;
-        else if (result === "repaired") repaired += 1;
-        else created += 1;
-      } catch (e) {
-        ztoolkit.log("import item failed", row.kp, e);
-        failed += 1;
+    return;
+  }
+  const libraryID = (Zotero.Libraries as any).userLibraryID as number;
+  const plans: ImportRowPlan[] = [];
+  for (const row of loaded.pkg.items) {
+    plans.push(await planRow(libraryID, row));
+  }
+  const counts = countImportPlans(plans);
+  const body = formatImportPlanLines(plans, { maxRows: 20 }).slice(1);
+  alertDialog(
+    [
+      getString("package-preview-title"),
+      getString("package-preview-summary", {
+        args: {
+          create: counts.create,
+          repair: counts.repair,
+          skip: counts.skip,
+          fail: counts.fail,
+          total: counts.total,
+        },
+      }),
+      ...body,
+    ].join("\n"),
+  );
+}
+
+async function importProcessedPdfPackage(): Promise<void> {
+  const root = getRootPath();
+  if (!root) {
+    alertDialog(getString("status-no-root"));
+    return;
+  }
+  if (!(await IOUtils.exists(root))) {
+    alertDialog(getString("status-root-missing", { args: { path: root } }));
+    return;
+  }
+  const loaded = await loadValidatedPackage(root);
+  if (!loaded.ok) {
+    if (loaded.kind === "missing") {
+      alertDialog(getString("package-missing", { args: { path: loaded.message } }));
+    } else if (loaded.kind === "invalid") {
+      alertDialog(getString("package-invalid") + "\n" + loaded.message);
+    } else {
+      alertDialog(
+        getString("status-error", { args: { message: loaded.message } }),
+      );
+    }
+    return;
+  }
+  const libraryID = (Zotero.Libraries as any).userLibraryID as number;
+  const results: ImportRowPlan[] = [];
+  for (const row of loaded.pkg.items) {
+    try {
+      const result = await createOrUpdateItem(libraryID, row);
+      if (result === "skipped") {
+        results.push({ kp: row.kp, action: "skip" });
+      } else if (result === "repaired") {
+        results.push({ kp: row.kp, action: "repair" });
+      } else {
+        results.push({ kp: row.kp, action: "create" });
       }
+    } catch (e: any) {
+      ztoolkit.log("import item failed", row.kp, e);
+      results.push({
+        kp: row.kp,
+        action: "fail",
+        detail: e?.message || String(e),
+      });
     }
-    alertDialog(
+  }
+  const created = results.filter((r) => r.action === "create").length;
+  const repaired = results.filter((r) => r.action === "repair").length;
+  const skipped = results.filter((r) => r.action === "skip").length;
+  const failed = results.filter((r) => r.action === "fail").length;
+  const reportBody = formatImportResultLines(results, { maxFailRows: 15 }).slice(
+    1,
+  );
+  alertDialog(
+    [
       getString("package-done", {
         args: {
           created: created + repaired,
           skipped,
           failed,
-          total: validated.package.items.length,
+          total: results.length,
         },
       }),
-    );
-  } catch (e: any) {
-    alertDialog(
-      getString("status-error", {
-        args: { message: e?.message || String(e) },
+      getString("package-done-detail", {
+        args: { created, repaired, skipped, failed },
       }),
-    );
-  }
+      ...reportBody,
+    ].join("\n"),
+  );
 }

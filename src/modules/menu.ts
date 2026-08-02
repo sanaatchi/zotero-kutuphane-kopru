@@ -1,12 +1,16 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b0, b2, b3, menu
+// @ajan: cursor · @etiket: katman-1, kopru, b0, b2, b3, a3-dry-run, a6-reverse-sync, menu
 import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 import {
   matchSelectedKps,
   showKutuphaneStatus,
   showPipelineSummary,
+  showReverseSyncReport,
 } from "./bridgeStatus";
-import { importProcessedPdfPackage } from "./packageImport";
+import {
+  importProcessedPdfPackage,
+  previewProcessedPdfPackage,
+} from "./packageImport";
 
 export { initItemMenu };
 
@@ -24,6 +28,13 @@ function initItemMenu(_win: Window) {
         label: getString("menu-match-kp"),
         commandListener: () => {
           void matchSelectedKps();
+        },
+      },
+      {
+        tag: "menuitem",
+        label: getString("menu-reverse-sync"),
+        commandListener: () => {
+          void showReverseSyncReport();
         },
       },
     ],
@@ -54,6 +65,20 @@ function initItemMenu(_win: Window) {
         label: getString("menu-match-kp"),
         commandListener: () => {
           void matchSelectedKps();
+        },
+      },
+      {
+        tag: "menuitem",
+        label: getString("menu-reverse-sync"),
+        commandListener: () => {
+          void showReverseSyncReport();
+        },
+      },
+      {
+        tag: "menuitem",
+        label: getString("menu-preview-package"),
+        commandListener: () => {
+          void previewProcessedPdfPackage();
         },
       },
       {

@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: katman-1, kopru, preferences -->
+<!-- @ajan: cursor · @etiket: katman-1, kopru, preferences, a5-http -->
 <vbox id="__addonRef__-container" xmlns:html="http://www.w3.org/1999/xhtml">
   <groupbox>
     <label><html:h2 data-l10n-id="prefs-title"></html:h2></label>
@@ -13,6 +13,27 @@
     </hbox>
     <html:label
       data-l10n-id="prefs-kutuphane-root-hint"
+      style="opacity:0.7; font-size:11px;"
+    ></html:label>
+    <hbox align="center" style="margin-top: 10px;">
+      <html:input
+        preference="__prefsPrefix__.bridgeHttpEnabled"
+        type="checkbox"
+        id="__addonRef__-bridge-http-enabled"
+      />
+      <label data-l10n-id="prefs-bridge-http-enabled"></label>
+    </hbox>
+    <hbox align="center">
+      <label data-l10n-id="prefs-bridge-http-base"></label>
+      <html:input
+        preference="__prefsPrefix__.bridgeHttpBaseUrl"
+        type="text"
+        style="flex:1; min-width: 240px;"
+        placeholder="http://127.0.0.1:8077"
+      />
+    </hbox>
+    <html:label
+      data-l10n-id="prefs-bridge-http-hint"
       style="opacity:0.7; font-size:11px;"
     ></html:label>
   </groupbox>

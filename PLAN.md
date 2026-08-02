@@ -16,7 +16,7 @@ Kütüphane ağır iş hattının Zotero ile konuşan **ince yüzü**. OCR/renam
 
 ## addonID
 
-`kutuphane-kopru@ibrahimyildiz.art` · ref `kutuphanekopru` · **v0.1.4**
+`kutuphane-kopru@ibrahimyildiz.art` · ref `kutuphanekopru` · **v0.1.16**
 
 ## Fazlar
 
@@ -41,7 +41,11 @@ npm run build
 **Kabul:** [`ZOTERO-KABUL-CHECKLIST.md`](ZOTERO-KABUL-CHECKLIST.md)
 
 Zotero: Tercihler → Kütüphane kök = `C:\Users\…\Kutuphane`  
-Araçlar → Kütüphane Köprü → durum / KP eşlemesi / pipeline / işlenmiş KP aktar
+Araçlar → Kütüphane Köprü → durum / KP eşlemesi / ters senkron / pipeline / paket
+
+## Citation Key
+
+Bkz. [`CITATION-KEY-BBT.md`](CITATION-KEY-BBT.md) — BBT gömülmez; KP = `KP######`.
 
 ## Yapmaz
 
