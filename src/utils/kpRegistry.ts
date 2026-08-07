@@ -1,4 +1,4 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b1, kp-parse, max-pdf, citation-key
+// @ajan: cursor · @etiket: katman-1, kopru, b1, kp-parse, max-pdf, citation-key, citekey-merge
 // Pure KP helpers — no Zotero globals.
 // Canonical KP###### policy mirrored in K2/K3 `src/utils/kpToken.ts` (same regex + MAX).
 
@@ -20,15 +20,24 @@ export type KpMatchRow = {
   inRegistry: boolean;
 };
 
+export type CitationKeyMergeAction = "set" | "same" | "keep-existing-kp";
+
+export type CitationKeyMergeResult = {
+  extra: string;
+  action: CitationKeyMergeAction;
+};
+
 export {
   normalizeKp,
   extractKpFromText,
   parseKpRegistryJson,
   summarizeSelectedAgainstRegistry,
   resolveItemKp,
+  mergePackageCitationKey,
 };
 
 const KP_RE = /\bKP0*\d{1,6}\b/i;
+const CITATION_KEY_LINE = /^Citation Key:\s*(.+)$/im;
 
 function normalizeKp(raw: string | null | undefined): string | null {
   if (!raw) return null;
@@ -43,6 +52,37 @@ function extractKpFromText(text: string | null | undefined): string | null {
   if (!text) return null;
   const m = String(text).match(KP_RE);
   return m ? normalizeKp(m[0]) : null;
+}
+
+/**
+ * Package-import Citation Key policy (Extra RMW lock out of scope):
+ * - empty / non-KP existing → set package KP (import authoritative for KP bus)
+ * - same KP → no-op
+ * - different valid KP → keep existing (fail-closed; avoid dual-writer wipe)
+ */
+function mergePackageCitationKey(
+  extra: string,
+  packageKp: string,
+): CitationKeyMergeResult {
+  const pkg = normalizeKp(packageKp);
+  if (!pkg) return { extra, action: "keep-existing-kp" };
+
+  const m = String(extra || "").match(CITATION_KEY_LINE);
+  const existingRaw = m ? m[1].trim() : "";
+  const existingKp = normalizeKp(existingRaw);
+
+  if (existingKp) {
+    if (existingKp === pkg) return { extra, action: "same" };
+    return { extra, action: "keep-existing-kp" };
+  }
+
+  const line = `Citation Key: ${pkg}`;
+  const re = /^Citation Key:\s*.+$/im;
+  const base = String(extra || "");
+  const next = re.test(base)
+    ? base.replace(re, line)
+    : (base ? base.replace(/\s*$/, "\n") : "") + line + "\n";
+  return { extra: next, action: "set" };
 }
 
 /**

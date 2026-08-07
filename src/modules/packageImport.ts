@@ -1,8 +1,9 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b3, a3-dry-run, a4-category, package-import, handoff, hash-verify
+// @ajan: cursor · @etiket: katman-1, kopru, b3, a3-dry-run, a4-category, package-import, handoff, hash-verify, citekey-merge
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
 import { normalizeKutuphaneRoot } from "../utils/kutuphaneRoot";
 import { CATEGORY_KEY, SHA256_KEY } from "../utils/itemPaneFields";
+import { mergePackageCitationKey } from "../utils/kpRegistry";
 import {
   countImportPlans,
   formatImportPlanLines,
@@ -208,6 +209,15 @@ async function createOrUpdateItem(
         throw new Error("attachment hash mismatch after repair");
       }
       let repairedExtra = extra;
+      // Citation Key: set package KP only if empty/non-KP; never overwrite a different valid KP.
+      const ckRepair = mergePackageCitationKey(repairedExtra, row.kp);
+      if (ckRepair.action === "keep-existing-kp") {
+        ztoolkit.log(
+          "packageImport: keep existing Citation Key KP (fail-closed)",
+          row.kp,
+        );
+      }
+      repairedExtra = ckRepair.extra;
       repairedExtra = upsertExtraLine(repairedExtra, IMPORT_STATUS_KEY, "complete");
       repairedExtra = upsertExtraLine(repairedExtra, SHA256_KEY, row.sha256);
       if (row.category) {
@@ -241,7 +251,15 @@ async function createOrUpdateItem(
     });
   }
   let extra = (item.getField("extra") as string) || "";
-  extra = upsertExtraLine(extra, "Citation Key", row.kp);
+  // Citation Key: package KP when empty/invalid; same KP no-op; different valid KP keep (fail-closed).
+  const ckCreate = mergePackageCitationKey(extra, row.kp);
+  if (ckCreate.action === "keep-existing-kp") {
+    ztoolkit.log(
+      "packageImport: keep existing Citation Key KP (fail-closed)",
+      row.kp,
+    );
+  }
+  extra = ckCreate.extra;
   extra = upsertExtraLine(extra, IDEMP_KEY, row.idempotencyKey);
   extra = upsertExtraLine(extra, SHA256_KEY, row.sha256);
   if (row.category) {

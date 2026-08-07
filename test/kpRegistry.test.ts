@@ -1,7 +1,8 @@
-// @ajan: cursor · @etiket: katman-1, kopru, vitest
+// @ajan: cursor · @etiket: katman-1, kopru, vitest, citekey-merge
 import { describe, expect, it } from "vitest";
 import {
   extractKpFromText,
+  mergePackageCitationKey,
   normalizeKp,
   parseKpRegistryJson,
   resolveItemKp,
@@ -61,5 +62,31 @@ describe("kpRegistry helpers", () => {
     });
     expect(r.kp).toBe("KP001353");
     expect(r.source).toBe("title-or-extra");
+  });
+
+  it("mergePackageCitationKey sets when empty", () => {
+    const r = mergePackageCitationKey("", "KP1353");
+    expect(r.action).toBe("set");
+    expect(r.extra).toContain("Citation Key: KP001353");
+  });
+
+  it("mergePackageCitationKey replaces non-KP citekey", () => {
+    const r = mergePackageCitationKey("Citation Key: smith2020\n", "KP001353");
+    expect(r.action).toBe("set");
+    expect(r.extra).toMatch(/^Citation Key: KP001353$/m);
+  });
+
+  it("mergePackageCitationKey no-op when same KP", () => {
+    const extra = "Citation Key: KP001353\n";
+    const r = mergePackageCitationKey(extra, "KP1353");
+    expect(r.action).toBe("same");
+    expect(r.extra).toBe(extra);
+  });
+
+  it("mergePackageCitationKey keeps different valid KP (fail-closed)", () => {
+    const extra = "Citation Key: KP000042\n";
+    const r = mergePackageCitationKey(extra, "KP001353");
+    expect(r.action).toBe("keep-existing-kp");
+    expect(r.extra).toBe(extra);
   });
 });

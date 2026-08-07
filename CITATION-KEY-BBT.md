@@ -1,4 +1,4 @@
-<!-- @ajan: cursor · @etiket: katman-1, kopru, a7-bbt, citekey -->
+<!-- @ajan: cursor · @etiket: katman-1, kopru, a7-bbt, citekey, citekey-merge -->
 
 # Citation Key ve Better BibTeX (A7)
 
@@ -14,6 +14,19 @@ Extra → Citation Key: KP001353
 2. Key `smith2020` gibi serbest BBT anahtarıysa KP **uydurulmaz**; başlık/Extra içinde `KP######` aranır.
 3. BBT yoksa Citation Key satırı genelde oluşmaz — eşleme zayıf kalır.
 
+## Paket aktarımı (Citation Key yazım politikası)
+
+`mergePackageCitationKey` (fail-closed):
+
+| Extra’daki Citation Key | Davranış |
+|-------------------------|----------|
+| boş / yok | paket KP yazılır |
+| geçerli KP, aynı | no-op |
+| geçerli KP, farklı | **mevcut korunur** (log) |
+| geçersiz / BBT / CK | paket KP ile değiştirilir (import KP bus’a yetkili) |
+
+K3 `ensureCitationKey` / `assignCitationKey` mevcut satırı (özellikle geçerli KP) ezmez.
+
 ## Öneri
 
 - Yan ürün / referans: `zotero-eklentiler/referanslar/katman-3/bibtex-export` (Better BibTeX).
@@ -24,3 +37,4 @@ Extra → Citation Key: KP001353
 
 - Köprüye BBT XPI gömmek
 - Serbest citekey’den KP üretmek
+- Çapraz XPI Extra RMW kilidi (kapsam dışı; soft residual)
