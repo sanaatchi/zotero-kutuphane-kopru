@@ -1,9 +1,14 @@
-// @ajan: cursor · @etiket: katman-1, kopru, b3, a3-dry-run, a4-category, package-import, handoff, hash-verify, citekey-merge
+// @ajan: cursor · @etiket: katman-1, kopru, b3, a3-dry-run, a4-category, package-import, handoff, hash-verify, citekey-merge, extra-rmw
 import { getString } from "../utils/locale";
 import { getPref } from "../utils/prefs";
 import { normalizeKutuphaneRoot } from "../utils/kutuphaneRoot";
 import { CATEGORY_KEY, SHA256_KEY } from "../utils/itemPaneFields";
 import { mergePackageCitationKey } from "../utils/kpRegistry";
+import {
+  applyFailedImportStatus,
+  applyRepairExtraFields,
+  upsertExtraLine,
+} from "../utils/packageImportExtra";
 import {
   countImportPlans,
   formatImportPlanLines,
@@ -30,13 +35,6 @@ function alertDialog(message: string) {
 
 function getRootPath(): string {
   return normalizeKutuphaneRoot(getPref("kutuphaneRoot"));
-}
-
-function upsertExtraLine(extra: string, key: string, value: string): string {
-  const re = new RegExp(`^${key}:\\s*.+$`, "im");
-  const line = `${key}: ${value}`;
-  if (re.test(extra)) return extra.replace(re, line);
-  return (extra ? extra.replace(/\s*$/, "\n") : "") + line + "\n";
 }
 
 async function sha256Hex(path: string): Promise<string> {
@@ -208,27 +206,21 @@ async function createOrUpdateItem(
       if (!(await attachmentMatchesPackage(existing, row))) {
         throw new Error("attachment hash mismatch after repair");
       }
-      let repairedExtra = extra;
-      // Citation Key: set package KP only if empty/non-KP; never overwrite a different valid KP.
-      const ckRepair = mergePackageCitationKey(repairedExtra, row.kp);
-      if (ckRepair.action === "keep-existing-kp") {
+      // Fresh Extra after attachment I/O — K2 reconciler may have written ZPDF-* during awaits.
+      const freshExtra = (existing.getField("extra") as string) || "";
+      const repaired = applyRepairExtraFields(freshExtra, row);
+      if (repaired.ckAction === "keep-existing-kp") {
         ztoolkit.log(
           "packageImport: keep existing Citation Key KP (fail-closed)",
           row.kp,
         );
       }
-      repairedExtra = ckRepair.extra;
-      repairedExtra = upsertExtraLine(repairedExtra, IMPORT_STATUS_KEY, "complete");
-      repairedExtra = upsertExtraLine(repairedExtra, SHA256_KEY, row.sha256);
-      if (row.category) {
-        repairedExtra = upsertExtraLine(repairedExtra, CATEGORY_KEY, row.category);
-      }
-      existing.setField("extra", repairedExtra);
+      existing.setField("extra", repaired.extra);
       await existing.saveTx();
       return "repaired";
     } catch (e) {
-      let failedExtra = upsertExtraLine(extra, IMPORT_STATUS_KEY, "failed");
-      existing.setField("extra", failedExtra);
+      const freshFail = (existing.getField("extra") as string) || "";
+      existing.setField("extra", applyFailedImportStatus(freshFail));
       await existing.saveTx();
       throw e;
     }

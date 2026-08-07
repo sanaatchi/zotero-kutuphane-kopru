@@ -1,8 +1,8 @@
-<!-- @ajan: cursor · @etiket: katman-1, eksik-raporu, deep-bug-analiz, v0.1.16, marker-reocr, hizalama-20260807, citekey-merge -->
+<!-- @ajan: cursor · @etiket: katman-1, eksik-raporu, deep-bug-analiz, v0.1.16, marker-reocr, hizalama-20260807, citekey-merge, extra-rmw -->
 
 # Cursor — Katman 1 Eksikler Raporu
 
-**Tarih:** 2026-08-02 · **Sürüm:** köprü **v0.1.17** (Citation Key fail-closed hotfix; package.json 2026-08-07)  
+**Tarih:** 2026-08-02 · **Sürüm:** köprü **v0.1.18** (Extra repair RMW hotfix; package.json 2026-08-07)  
 **Durum:** A1–A7 ✅. A8 yanlış katman (OCR/watch K1 XPI’ye yok).
 
 ---
@@ -19,7 +19,8 @@
 | KP `normalizeKp` | ✅ | K2/K3 `kpToken` mirror |
 | Yasak (OCR köprü XPI) | ✅ | A8 + strateji OCR haritası |
 | Açık **P1** çapraz | **Yok** | Doc drift kök `uc-katman-stratejisi` → **düzeltildi** (0.1.16/1.0.160/1.0.65) |
-| Citation Key dual-writer | ✅ soft | `mergePackageCitationKey` fail-closed (farklı geçerli KP ezilmez); Extra RMW kilit yok |
+| Citation Key dual-writer | ✅ soft | `mergePackageCitationKey` fail-closed (farklı geçerli KP ezilmez) |
+| Extra repair RMW | ✅ **0.1.18** | repair success/fail: await sonrası taze `getField("extra")` + `applyRepairExtraFields` (K2 `ZPDF-*` korunur) |
 | packageImport | ✅ spot-check | SHA-256 · `isPathInsideRoot` · idempotencyKey |
 | Python `file_lock` | ✅ | `kitap_arsiv/file_lock.py` InterProcessFileLock (checkpoint concurrency) |
 
